@@ -4,42 +4,13 @@ import { ObjectId } from "bson";
 import { validateCreateUpdateQuestion } from "../middlewares/post-put-questions.validation.mjs";
 import { validateCreateUpdateAnswer } from "../middlewares/post-put-answers.validation.mjs";
 import { rateLimiter } from "../middlewares/basic-rate-limit.mjs";
+import {
+  formatQuestion,
+  formatAnswer,
+  handleQuestionVote,
+} from "../utils/formatters.mjs";
 
 const questionRouter = Router();
-
-function formatQuestion(question) {
-  return {
-    id: question._id.toString(),
-    title: question.title ? question.title : "",
-    description: question.description ? question.description : "",
-    category: question.category ? question.category : "",
-    created_at: question.created_at ? question.created_at.toISOString() : null,
-    updated_at: question.updated_at ? question.updated_at.toISOString() : null,
-  };
-}
-
-function formatQuestionWithUpvoteDownvote(question, aggregatedVoteData) {
-  return {
-    id: question._id.toString(),
-    title: question.title ? question.title : "",
-    description: question.description ? question.description : "",
-    category: question.category ? question.category : "",
-    created_at: question.created_at ? question.created_at.toISOString() : null,
-    updated_at: question.updated_at ? question.updated_at.toISOString() : null,
-    upvotes: aggregatedVoteData.total_upvotes || 0,
-    downvotes: aggregatedVoteData.total_downvotes || 0,
-  };
-}
-
-function formatAnswer(answer) {
-  return {
-    id: answer._id.toString(),
-    question_id: answer.question_id ? answer.question_id : "",
-    content: answer.content ? answer.content : "",
-    created_at: answer.created_at ? answer.created_at.toISOString() : null,
-    updated_at: answer.updated_at ? answer.updated_at.toISOString() : null,
-  };
-}
 
 async function checkIfQuestionExist(questionIdObj) {
   try {
@@ -177,12 +148,8 @@ questionRouter.post(
       }
 
       // return response body in a custom format
-      const insertedId = result.insertedId;
-
-      const formattedQuestion = formatQuestion({
-        _id: insertedId,
-        ...questionData,
-      });
+      const question = await collection.findOne({ _id: result.insertedId });
+      const formattedQuestion = formatQuestion(question);
 
       return res.status(201).json({
         message: "201 Created: Question created successfully.",
@@ -246,150 +213,19 @@ questionRouter.post(
 
 questionRouter.post(
   "/:id/upvote",
-  [rateLimiter(100, 1440000)],
+  [rateLimiter(1, 1440000)],
   async (req, res) => {
-    try {
-      const questionId = ObjectId.createFromHexString(req.params.id);
-      const voteValue = 1;
-
-      if (!(await checkIfQuestionExist(questionId))) {
-        return res.status(404).json({
-          message: "404 Not Found: Question not found.",
-        });
-      }
-
-      // fetch question
-      const questionCollection = db.collection("questions");
-      const question = await questionCollection.findOne({ _id: questionId });
-
-      // Insert new upvote record
-      const questionVotesCollection = db.collection("question_votes");
-      const insertResult = await questionVotesCollection.insertOne({
-        question_id: questionId,
-        vote: voteValue,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
-      if (!insertResult.acknowledged) {
-        throw new Error("Failed to insert upvote record");
-      }
-
-      // Calculate total upvotes and downvotes
-      const voteAggregation = await questionVotesCollection
-        .aggregate([
-          { $match: { question_id: questionId } },
-          {
-            $group: {
-              _id: "$question_id",
-              total_upvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", 1] }, 1, 0] },
-              },
-              total_downvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", -1] }, 1, 0] },
-              },
-            },
-          },
-        ])
-        .toArray();
-
-      const aggregatedVote = voteAggregation[0] || {
-        total_upvotes: 0,
-        total_downvotes: 0,
-      };
-
-      const formattedQuestion = formatQuestionWithUpvoteDownvote(
-        question,
-        aggregatedVote
-      );
-
-      return res.status(200).json({
-        message: "200 OK: Successfully upvoted the question.",
-        data: formattedQuestion,
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        message: "Server could not process the request due to database issue.",
-      });
-    }
+    const voteValue = 1;
+    return handleQuestionVote(req, res, voteValue);
   }
 );
 
 questionRouter.post(
   "/:id/downvote",
-  [rateLimiter(100, 1440000)],
+  [rateLimiter(1, 1440000)],
   async (req, res) => {
-    try {
-      const questionId = ObjectId.createFromHexString(req.params.id);
-      const voteValue = -1;
-
-      if (!(await checkIfQuestionExist(questionId))) {
-        return res.status(404).json({
-          message: "404 Not Found: Question not found.",
-        });
-      }
-
-      // fetch question
-      const questionCollection = db.collection("questions");
-      const question = await questionCollection.findOne({ _id: questionId });
-
-      if (!question) {
-        return res.status(404).json({
-          error: "Question not found",
-        });
-      }
-      // Insert new downvote record
-      const questionVotesCollection = db.collection("question_votes");
-      const insertResult = await questionVotesCollection.insertOne({
-        question_id: questionId,
-        vote: voteValue,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
-      if (!insertResult.acknowledged) {
-        throw new Error("Failed to insert downvote record");
-      }
-
-      // Calculate total upvotes and downvotes
-      const voteAggregation = await questionVotesCollection
-        .aggregate([
-          { $match: { question_id: questionId } },
-          {
-            $group: {
-              _id: "$question_id",
-              total_upvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", 1] }, 1, 0] },
-              },
-              total_downvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", -1] }, 1, 0] },
-              },
-            },
-          },
-        ])
-        .toArray();
-
-      const aggregatedVote = voteAggregation[0] || {
-        total_upvotes: 0,
-        total_downvotes: 0,
-      };
-
-      const formattedQuestion = formatQuestionWithUpvoteDownvote(
-        question,
-        aggregatedVote
-      );
-
-      return res.status(200).json({
-        message: "200 OK: Successfully downvoted the question.",
-        data: formattedQuestion,
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        message: "Server could not process the request due to database issue.",
-      });
-    }
+    const voteValue = -1;
+    return handleQuestionVote(req, res, voteValue);
   }
 );
 // PUT
@@ -400,25 +236,21 @@ questionRouter.put(
     try {
       const questionId = ObjectId.createFromHexString(req.params.questionId);
 
-      if (!(await checkIfQuestionExist(questionId))) {
-        return res.status(404).json({
-          message: "404 Not Found: Question not found",
-        });
-      }
-
-      const updatedData = {
+      const questionData = {
         ...req.body,
         updated_at: new Date(),
       };
 
       const collection = db.collection("questions");
-      const updateResult = await collection.updateOne(
+      const result = await collection.updateOne(
         { _id: questionId },
-        { $set: updatedData }
+        { $set: questionData }
       );
 
-      if (updateResult.modifiedCount === 0) {
-        throw new Error("Failed to update question");
+      if (result.matchedCount === 0) {
+        return res
+          .status(404)
+          .json({ message: "404 Not Found: Question not found." });
       }
 
       // return response body in custom format
@@ -439,15 +271,9 @@ questionRouter.put(
 );
 
 // DELETE
-questionRouter.delete("/:id", async (req, res) => {
+questionRouter.delete("/:id", rateLimiter(10, 60000), async (req, res) => {
   try {
     const questionId = ObjectId.createFromHexString(req.params.id);
-
-    if (!(await checkIfQuestionExist(questionId))) {
-      return res.status(404).json({
-        message: "404 Not Found: Question not found",
-      });
-    }
 
     // delete the question
     const questionsCollection = db.collection("questions");
@@ -456,12 +282,14 @@ questionRouter.delete("/:id", async (req, res) => {
     });
 
     if (deletedQuestionResult.deletedCount === 0) {
-      throw new Error("Failed to delete question");
+      return res
+        .status(404)
+        .json({ message: "404 Not Found: Question not found." });
     }
     // after delete the question, delete associated answers
     // (if the question don't have answers, the deleteAnswerResult will return deletedCount : 0)
     const answerCollection = db.collection("answers");
-    const deletedAnswerResult = await answerCollection.deleteMany({
+    await answerCollection.deleteMany({
       question_id: questionId,
     });
 

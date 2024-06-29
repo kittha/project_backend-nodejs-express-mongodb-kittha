@@ -3,29 +3,9 @@ import { db } from "../utils/db.mjs";
 import { ObjectId } from "mongodb";
 import { validateCreateUpdateAnswer } from "../middlewares/post-put-answers.validation.mjs";
 import { rateLimiter } from "../middlewares/basic-rate-limit.mjs";
+import { formatAnswer, handleAnswerVote } from "../utils/formatters.mjs";
 
 const answerRouter = Router();
-
-function formatAnswerWithUpvoteDownvote(answer, aggregatedVoteData) {
-  return {
-    id: answer._id.toString(),
-    question_id: answer.question_id,
-    content: answer.content ? answer.content : "",
-    created_at: answer.created_at ? answer.created_at.toISOString() : null,
-    updated_at: answer.updated_at ? answer.updated_at.toISOString() : null,
-    upvotes: aggregatedVoteData.total_upvotes || 0,
-    downvotes: aggregatedVoteData.total_downvotes || 0,
-  };
-}
-function formatAnswer(answer) {
-  return {
-    id: answer._id.toString(),
-    question_id: answer.question_id ? answer.question_id : "",
-    content: answer.content ? answer.content : "",
-    created_at: answer.created_at ? answer.created_at.toISOString() : null,
-    updated_at: answer.updated_at ? answer.updated_at.toISOString() : null,
-  };
-}
 
 async function checkIfAnswerExist(answerIdObj) {
   try {
@@ -59,162 +39,26 @@ answerRouter.get("/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      message: "Server could not process the request due to database issue.",
     });
   }
 });
 // POST
 answerRouter.post(
   "/:id/upvote",
-  [rateLimiter(100, 1440000)],
+  [rateLimiter(1, 1440000)],
   async (req, res) => {
-    try {
-      const answerId = ObjectId.createFromHexString(req.params.id);
-      const voteValue = 1;
-
-      if (!(await checkIfAnswerExist(answerId))) {
-        return res.status(404).json({
-          error: "Answer not found",
-        });
-      }
-
-      // fetch answer
-      const answerCollection = db.collection("answers");
-      const answer = await answerCollection.findOne({ _id: answerId });
-
-      if (!answer) {
-        return res.status(404).json({
-          error: "Answer not found",
-        });
-      }
-      // Insert new upvote record
-      const answerVotesCollection = db.collection("answer_votes");
-      const insertResult = await answerVotesCollection.insertOne({
-        answer_id: answerId,
-        vote: voteValue,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
-      if (!insertResult.acknowledged) {
-        throw new Error("Failed to insert upvote record");
-      }
-
-      // Calculate total upvotes and downvotes
-      const voteAggregation = await answerVotesCollection
-        .aggregate([
-          { $match: { answer_id: answerId } },
-          {
-            $group: {
-              _id: "$answer_id",
-              total_upvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", 1] }, 1, 0] },
-              },
-              total_downvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", -1] }, 1, 0] },
-              },
-            },
-          },
-        ])
-        .toArray();
-
-      const aggregatedVote = voteAggregation[0] || {
-        total_upvotes: 0,
-        total_downvotes: 0,
-      };
-
-      const formattedAnswer = formatAnswerWithUpvoteDownvote(
-        answer,
-        aggregatedVote
-      );
-
-      return res.status(200).json({
-        message: "200 OK: Successfully upvoted the answer.",
-        data: formattedAnswer,
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        error: "Internal Server Error",
-      });
-    }
+    const voteValue = 1;
+    handleAnswerVote(req, res, voteValue);
   }
 );
 
 answerRouter.post(
   "/:id/downvote",
-  [rateLimiter(100, 1440000)],
+  [rateLimiter(1, 1440000)],
   async (req, res) => {
-    try {
-      const answerId = ObjectId.createFromHexString(req.params.id);
-      const voteValue = 1;
-
-      if (!(await checkIfAnswerExist(answerId))) {
-        return res.status(404).json({
-          error: "Answer not found",
-        });
-      }
-
-      // fetch question
-      const answerCollection = db.collection("answers");
-      const answer = await answerCollection.findOne({ _id: answerId });
-
-      if (!answer) {
-        return res.status(404).json({
-          error: "Answer not found",
-        });
-      }
-      // Insert new downvote record
-      const answerVotesCollection = db.collection("answer_votes");
-      const insertResult = await answerVotesCollection.insertOne({
-        answer_id: answerId,
-        vote: voteValue,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
-      if (!insertResult.acknowledged) {
-        throw new Error("Failed to insert downvote record");
-      }
-
-      // Calculate total upvotes and downvotes
-      const voteAggregation = await answerVotesCollection
-        .aggregate([
-          { $match: { answer_id: answerId } },
-          {
-            $group: {
-              _id: "$answer_id",
-              total_upvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", 1] }, 1, 0] },
-              },
-              total_downvotes: {
-                $sum: { $cond: [{ $eq: ["$vote", -1] }, 1, 0] },
-              },
-            },
-          },
-        ])
-        .toArray();
-
-      const aggregatedVote = voteAggregation[0] || {
-        total_upvotes: 0,
-        total_downvotes: 0,
-      };
-
-      const formattedAnswer = formatAnswerWithUpvoteDownvote(
-        answer,
-        aggregatedVote
-      );
-
-      return res.status(200).json({
-        message: "200 OK: Successfully downvoted the answer.",
-        data: formattedAnswer,
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        error: "Internal Server Error",
-      });
-    }
+    const voteValue = -1;
+    handleAnswerVote(req, res, voteValue);
   }
 );
 
@@ -226,72 +70,64 @@ answerRouter.put(
     try {
       const answerId = ObjectId.createFromHexString(req.params.id);
 
-      if (!(await checkIfAnswerExist(answerId))) {
-        return res.status(404).json({
-          message: "404 Not Found: Answer not found",
-        });
-      }
-
-      const updatedData = {
+      const answerData = {
         ...req.body,
         updated_at: new Date(),
       };
 
       const collection = db.collection("answers");
-      const updateResult = await collection.updateOne(
+      const result = await collection.updateOne(
         { _id: answerId },
-        { $set: updatedData }
+        { $set: answerData }
       );
 
-      if (updateResult.modifiedCount === 0) {
-        throw new Error("Failed to update answer");
+      if (result.matchedCount === 0) {
+        return res
+          .status(404)
+          .json({ message: "404 Not Found: Answer not found." });
       }
 
       // return response body in custom format
       const updatedAnswer = await collection.findOne({ _id: answerId });
-
       const formattedAnswer = formatAnswer(updatedAnswer);
-      return res.status(202).json({
-        message: "Update question successfully",
+
+      return res.status(200).json({
+        message: "200 OK: Successfully updated the answer.",
         data: formattedAnswer,
       });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
-        error: "Internal Server Error",
+        message: "Server could not process the request due to database issue.",
       });
     }
   }
 );
 
 // DELETE
-answerRouter.delete("/:id", async (req, res) => {
+answerRouter.delete("/:id", [rateLimiter(10, 60000)], async (req, res) => {
   try {
     const answerId = ObjectId.createFromHexString(req.params.id);
 
-    if (!(await checkIfAnswerExist(answerId))) {
-      return res.status(404).json({
-        message: "404 Not Found: Answer not found",
-      });
-    }
-
     // delete the answer
-    const answersCollection = db.collection("answers");
-    const deletedAnswerResult = await answersCollection.deleteOne({
+    const collection = db.collection("answers");
+    const result = await collection.deleteOne({
       _id: answerId,
     });
 
-    if (deletedAnswerResult.deletedCount === 0) {
-      throw new Error("Failed to delete answer");
+    if (result.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "404 Not Found: Answer not found." });
     }
 
     return res.status(200).json({
-      message: "Answers deleted successfully.",
+      message: "200 OK: Answers deleted successfully.",
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      message: "Server could not process the request due to database issue.",
     });
   }
 });
