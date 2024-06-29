@@ -1,4 +1,7 @@
 import express from "express";
+import fs from "fs";
+import yaml from "js-yaml";
+import swaggerUi from "swagger-ui-express";
 import { client } from "./utils/db.mjs";
 import { rateLimiter } from "./middlewares/basic-rate-limit.mjs";
 import questionRouter from "./routes/questions.mjs";
@@ -7,6 +10,10 @@ import answerRouter from "./routes/answers.mjs";
 async function init() {
   const app = express();
   const port = 4000;
+
+  const yamlFile = fs.readFileSync("./swagger.yaml", "utf8");
+  const swaggerDocument = yaml.load(yamlFile);
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   await client.connect();
 

@@ -46,7 +46,7 @@ answerRouter.get("/:id", async (req, res) => {
 // POST
 answerRouter.post(
   "/:id/upvote",
-  [rateLimiter(1, 1440000)],
+  [rateLimiter(100, 1440000)],
   async (req, res) => {
     const voteValue = 1;
     handleAnswerVote(req, res, voteValue);
@@ -55,7 +55,7 @@ answerRouter.post(
 
 answerRouter.post(
   "/:id/downvote",
-  [rateLimiter(1, 1440000)],
+  [rateLimiter(100, 1440000)],
   async (req, res) => {
     const voteValue = -1;
     handleAnswerVote(req, res, voteValue);

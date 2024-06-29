@@ -1,0 +1,694 @@
+openapi: 3.0.0
+info:
+  title: Questions and Answers API
+  version: 1.0.0
+  contact:
+    name: Kittanut Thammapibaljit
+    url: https://github.com/kittha
+paths:
+  /questions:
+    get:
+      summary: Get all questions
+      description: Retrieve a list of all questions.
+      parameters:
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Title to filter questions
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Category to filter questions
+      responses:
+        "200":
+          description: A list of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+        "404":
+          description: Questions not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    post:
+      summary: Create a new question
+      description: Create a new question.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionCreateUpdate"
+      responses:
+        "201":
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          description: Bad request - Missing or invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /questions/{id}/answers:
+    post:
+      summary: Create an answer for a question
+      description: Create an answer for a specific question identified by ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the question to which the answer belongs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  maxLength: 300
+              required:
+                - content
+      responses:
+        "201":
+          description: Answer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Answer"
+        "400":
+          description: Bad request - Missing or invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /questions/{id}/upvote:
+    post:
+      summary: Upvote a question
+      description: Upvote a specific question identified by ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the question to upvote
+      responses:
+        "200":
+          description: Successfully upvoted the question
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/QuestionWithUpvoteDownvote"
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /questions/{id}/downvote:
+    post:
+      summary: Downvote a question
+      description: Downvote a specific question identified by ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the question to downvote
+      responses:
+        "200":
+          description: Successfully downvoted the question
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/QuestionWithUpvoteDownvote"
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /questions/{id}:
+    get:
+      summary: Get a question by ID
+      description: Retrieve a question by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the question to retrieve
+      responses:
+        "200":
+          description: A single question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    put:
+      summary: Update a question by ID
+      description: Update a question by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the question to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionCreateUpdate"
+      responses:
+        "200":
+          description: Question updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          description: Bad request - Missing or invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    delete:
+      summary: Delete a question by ID
+      description: Delete a question by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the question to delete
+      responses:
+        "200":
+          description: Question deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /answers/{id}/upvote:
+    post:
+      summary: Upvote an answer
+      description: Upvote an answer by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the answer to upvote
+      responses:
+        "200":
+          description: Successfully upvoted the answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/AnswerWithUpvoteDownvote"
+        "404":
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /answers/{id}/downvote:
+    post:
+      summary: Downvote an answer
+      description: Downvote an answer by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the answer to downvote
+      responses:
+        "200":
+          description: Successfully downvoted the answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/AnswerWithUpvoteDownvote"
+        "404":
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /answers/{id}:
+    get:
+      summary: Get answer by ID
+      description: Retrieve an answer by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the answer to retrieve
+      responses:
+        "200":
+          description: Successfully retrieved the answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Answer"
+        "404":
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    put:
+      summary: Update answer by ID
+      description: Update an answer by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the answer to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerCreateUpdate"
+      responses:
+        "200":
+          description: Successfully updated the answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Answer"
+        "400":
+          description: Bad request - Missing or invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    delete:
+      summary: Delete answer by ID
+      description: Delete an answer by its ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the answer to delete
+      responses:
+        "200":
+          description: Successfully deleted the answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+components:
+  schemas:
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the question.
+        title:
+          type: string
+          description: Title of the question.
+        description:
+          type: string
+          description: Description of the question.
+        category:
+          type: string
+          description: Category of the question.
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the question was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time when the question was last updated.
+    QuestionCreateUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 10
+          maxLength: 100
+          description: Title of the question to be created or updated.
+        description:
+          type: string
+          maxLength: 300
+          description: Description of the question to be created or updated.
+        category:
+          type: string
+          description: Category of the question to be created or updated.
+      required:
+        - title
+    QuestionWithUpvoteDownvote:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the question.
+        title:
+          type: string
+          description: Title of the question.
+        description:
+          type: string
+          description: Description of the question.
+        category:
+          type: string
+          description: Category of the question.
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the question was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time when the question was last updated.
+        upvotes:
+          type: integer
+          description: Number of upvotes for the question.
+        downvotes:
+          type: integer
+          description: Number of downvotes for the question.
+    Answer:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the answer.
+        question_id:
+          type: string
+          description: ID of the question to which the answer belongs.
+        content:
+          type: string
+          description: Content of the answer.
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the answer was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time when the answer was last updated.
+    AnswerCreateUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 300
+          description: Content of the answer to be created or updated.
+      required:
+        - content
+    AnswerWithUpvoteDownvote:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the answer.
+        question_id:
+          type: string
+          description: ID of the question to which the answer belongs.
+        content:
+          type: string
+          description: Content of the answer.
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the answer was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time when the answer was last updated.
+        upvotes:
+          type: integer
+          description: Number of upvotes for the answer.
+        downvotes:
+          type: integer
+          description: Number of downvotes for the answer.
