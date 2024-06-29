@@ -6,7 +6,6 @@ import { validateCreateUpdateAnswer } from "../middlewares/post-put-answers.vali
 import { rateLimiter } from "../middlewares/basic-rate-limit.mjs";
 
 const questionRouter = Router();
-export default questionRouter;
 
 function formatQuestion(question) {
   return {
@@ -79,45 +78,50 @@ questionRouter.get("/", async (req, res) => {
     const result = await collection.find(query).limit(10).toArray();
 
     if (!result) {
-      return res.status(404).json({ error: "Question not found" });
+      return res
+        .status(404)
+        .json({ message: "404 Not Found: Question not found" });
     }
 
     // return response body in custom format
     const formattedQuestions = result.map(formatQuestion);
 
     return res.status(200).json({
-      message: "Success",
+      message: "200 OK: Successfully retrieved the list of questions.",
       data: formattedQuestions,
     });
   } catch (error) {
     console.error("Error fetching question:", error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      error: "Server could not process the request due to database issue.",
     });
   }
 });
 
-questionRouter.get("/:id", async (req, res) => {
+questionRouter.get("/:questionId", async (req, res) => {
   try {
-    const questionId = ObjectId.createFromHexString(req.params.id);
+    const questionId = ObjectId.createFromHexString(req.params.questionId);
 
     const collection = db.collection("questions");
     const result = await collection.findOne({ _id: questionId });
 
     if (!result) {
-      return res.status(404).json({ error: "Question not found" });
+      return res
+        .status(404)
+        .json({ message: "404 Not Found: Question not found" });
     }
 
     // return response body in custom format
     const formattedQuestion = formatQuestion(result);
 
-    return res
-      .status(200)
-      .json({ message: "Success", data: formattedQuestion });
+    return res.status(200).json({
+      message: "200 OK: Successfully retrieved the question",
+      data: formattedQuestion,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      message: "Server could not process the request due to database issue.",
     });
   }
 });
@@ -128,7 +132,7 @@ questionRouter.get("/:id/answers", async (req, res) => {
 
     if (!(await checkIfQuestionExist(questionId))) {
       return res.status(404).json({
-        error: "Question not found",
+        message: "404 Not Found: Question not found.",
       });
     }
 
@@ -142,13 +146,13 @@ questionRouter.get("/:id/answers", async (req, res) => {
     const formattedAnswers = result.map(formatAnswer);
 
     return res.status(200).json({
-      message: "Success",
+      message: "200 OK: Successfully retrieved the answers",
       data: formattedAnswers,
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      message: "Server could not process the request due to database issue.",
     });
   }
 });
@@ -181,13 +185,13 @@ questionRouter.post(
       });
 
       return res.status(201).json({
-        message: `Create question successfully`,
+        message: "201 Created: Question created successfully.",
         data: formattedQuestion,
       });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
-        error: "Internal Server Error",
+        message: "Server could not process the request due to database issue.",
       });
     }
   }
@@ -202,7 +206,7 @@ questionRouter.post(
 
       if (!(await checkIfQuestionExist(questionId))) {
         return res.status(404).json({
-          error: "Question not found",
+          message: "404 Not Found: Question not found",
         });
       }
 
@@ -228,13 +232,13 @@ questionRouter.post(
       });
 
       return res.status(201).json({
-        message: `Create question successfully`,
+        message: "201 Created: Answer created successfully.",
         data: formattedAnswer,
       });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
-        error: "Internal Server Error",
+        message: "Server could not process the request due to database issue.",
       });
     }
   }
@@ -250,7 +254,7 @@ questionRouter.post(
 
       if (!(await checkIfQuestionExist(questionId))) {
         return res.status(404).json({
-          error: "Question not found",
+          message: "404 Not Found: Question not found.",
         });
       }
 
@@ -258,11 +262,6 @@ questionRouter.post(
       const questionCollection = db.collection("questions");
       const question = await questionCollection.findOne({ _id: questionId });
 
-      if (!question) {
-        return res.status(404).json({
-          error: "Question not found",
-        });
-      }
       // Insert new upvote record
       const questionVotesCollection = db.collection("question_votes");
       const insertResult = await questionVotesCollection.insertOne({
@@ -299,7 +298,6 @@ questionRouter.post(
         total_downvotes: 0,
       };
 
-      // return response body in a custom format by merge result of question and updatedQuesion
       const formattedQuestion = formatQuestionWithUpvoteDownvote(
         question,
         aggregatedVote
@@ -312,7 +310,7 @@ questionRouter.post(
     } catch (error) {
       console.error(error);
       return res.status(500).json({
-        error: "Internal Server Error",
+        message: "Server could not process the request due to database issue.",
       });
     }
   }
@@ -328,7 +326,7 @@ questionRouter.post(
 
       if (!(await checkIfQuestionExist(questionId))) {
         return res.status(404).json({
-          error: "Question not found",
+          message: "404 Not Found: Question not found.",
         });
       }
 
@@ -377,7 +375,6 @@ questionRouter.post(
         total_downvotes: 0,
       };
 
-      // return response body in a custom format by merge result of question and updatedQuesion
       const formattedQuestion = formatQuestionWithUpvoteDownvote(
         question,
         aggregatedVote
@@ -390,18 +387,18 @@ questionRouter.post(
     } catch (error) {
       console.error(error);
       return res.status(500).json({
-        error: "Internal Server Error",
+        message: "Server could not process the request due to database issue.",
       });
     }
   }
 );
 // PUT
 questionRouter.put(
-  "/:id",
+  "/:questionId",
   [validateCreateUpdateQuestion, rateLimiter(10, 60000)],
   async (req, res) => {
     try {
-      const questionId = ObjectId.createFromHexString(req.params.id);
+      const questionId = ObjectId.createFromHexString(req.params.questionId);
 
       if (!(await checkIfQuestionExist(questionId))) {
         return res.status(404).json({
@@ -428,8 +425,8 @@ questionRouter.put(
       const updatedQuestion = await collection.findOne({ _id: questionId });
       const formattedQuestion = formatQuestion(updatedQuestion);
 
-      return res.status(202).json({
-        message: "Update question successfully",
+      return res.status(200).json({
+        message: "200 OK: Successfully updated the question.",
         data: formattedQuestion,
       });
     } catch (error) {
@@ -474,7 +471,9 @@ questionRouter.delete("/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      message: "Server could not process the request due to database issue.",
     });
   }
 });
+
+export default questionRouter;
