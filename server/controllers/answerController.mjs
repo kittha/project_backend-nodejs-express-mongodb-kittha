@@ -8,6 +8,7 @@ import {
   formatAnswer,
   formatAnswerWithUpvoteDownvote,
 } from "../utils/formatters.mjs";
+import logger from "../utils/logger.mjs";
 
 // GET
 export const getAnswerById = async (req, res) => {
