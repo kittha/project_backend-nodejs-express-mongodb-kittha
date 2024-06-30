@@ -2,6 +2,7 @@ import express from "express";
 import { validateCreateUpdateQuestion } from "../middlewares/post-put-questions.validation.mjs";
 import { validateCreateUpdateAnswer } from "../middlewares/post-put-answers.validation.mjs";
 import { rateLimiter } from "../middlewares/basic-rate-limit.mjs";
+import { verifyToken } from "../middlewares/authMiddleware.mjs";
 import {
   getAllQuestions,
   getQuestionById,
@@ -21,7 +22,7 @@ router.get("/:id", getQuestionById);
 router.get("/:id/answers", getAnswersByQuestionId);
 router.post(
   "/",
-  [validateCreateUpdateQuestion, rateLimiter(10, 60000)],
+  [validateCreateUpdateQuestion, rateLimiter(10, 60000), verifyToken],
   createQuestion
 );
 router.post(

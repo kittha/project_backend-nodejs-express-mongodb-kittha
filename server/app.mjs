@@ -1,26 +1,23 @@
 import express from "express";
-import fs from "fs";
-import yaml from "js-yaml";
+import { loadSwaggerDocument } from "./utils/swagger.mjs";
 import swaggerUi from "swagger-ui-express";
-import { client } from "./utils/db.mjs";
 import { rateLimiter } from "./middlewares/basic-rate-limit.mjs";
 import questionRouter from "./routes/questionsRoutes.mjs";
 import answerRouter from "./routes/answersRoutes.mjs";
+import authRoutes from "./routes/authRoutes.mjs";
 
 async function init() {
   const app = express();
   const port = 4000;
 
-  const yamlFile = fs.readFileSync("./swagger.yaml", "utf8");
-  const swaggerDocument = yaml.load(yamlFile);
+  const swaggerDocument = await loadSwaggerDocument("./swagger.yaml");
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-  await client.connect();
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   app.use(rateLimiter(50, 60000));
+  app.use("/auth", authRoutes);
   app.use("/questions", questionRouter);
   app.use("/answers", answerRouter);
 
