@@ -8,8 +8,9 @@ This backend project is built using Node.js and Express for robust server-side J
 
 - Node.js: Chosen for its asynchronous and event-driven architecture, ideal for handling multiple concurrent requests efficiently.
 - Express: Selected for its minimalistic yet powerful framework that simplifies routing, middleware management, and handling HTTP requests.
-- Rate Limiting Middleware: Custom rate limiting middleware is implemented to mitigate abuse and ensure fair usage of the API.
 - MongoDB: Chosen for its robust non-relational database capabilities, MongoDB stores questions, answers, and user data, ensuring flexibility and scalability to effortlessly manage large datasets.
+- Rate Limiting Middleware: Custom rate limiting middleware is implemented to mitigate abuse and ensure fair usage of the API.
+- JWT Authorization: Implemented for securing endpoints, ensuring that only authenticated users can access certain routes.
 - Swagger: Integrated for API documentation, providing clear and interactive documentation for developers consuming the API.
 
 ## Table of content:
