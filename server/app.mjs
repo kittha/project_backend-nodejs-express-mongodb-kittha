@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 import swaggerUi from "swagger-ui-express";
 import { client } from "./utils/db.mjs";
 import { rateLimiter } from "./middlewares/basic-rate-limit.mjs";
-import questionRouter from "./routes/questions.mjs";
+import questionRouter from "./routes/questionsRoutes.mjs";
 import answerRouter from "./routes/answers.mjs";
 
 async function init() {
@@ -36,4 +36,5 @@ async function init() {
     console.log(`Server is running at port ${port}`);
   });
 }
+
 init();
