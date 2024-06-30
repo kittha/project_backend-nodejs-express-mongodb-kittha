@@ -29,8 +29,12 @@ router.post(
   [validateCreateUpdateAnswer, rateLimiter(10, 60000)],
   createAnswerByQuestionId
 );
-router.post("/:id/upvote", [rateLimiter(1, 1440000)], handleQuestionUpvote);
-router.post("/:id/downvote", [rateLimiter(1, 1440000)], handleQuestionDownvote);
+router.post("/:id/upvote", [rateLimiter(10, 1440000)], handleQuestionUpvote);
+router.post(
+  "/:id/downvote",
+  [rateLimiter(10, 1440000)],
+  handleQuestionDownvote
+);
 router.put("/:id", updateQuestion);
 router.delete("/:id", deleteQuestion);
 
