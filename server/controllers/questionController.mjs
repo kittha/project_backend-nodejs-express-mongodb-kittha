@@ -1,7 +1,7 @@
 import {
   getAllQuestions as getAllQuestionsFromModel,
   getQuestionById as getQuestionByIdFromModel,
-  getAnswerByQuestionId as getAnswerByQuestionIdFromModel,
+  getAnswersByQuestionId as getAnswersByQuestionIdFromModel,
   createQuestion as createQuestionFromModel,
   createAnswerByQuestionId as createAnswerByQuestionIdFromModel,
   handleQuestionVote as handleQuestionVoteFromModel,
@@ -62,17 +62,17 @@ export const getQuestionById = async (req, res) => {
   }
 };
 
-export const getAnswerByQuestionId = async (req, res) => {
+export const getAnswersByQuestionId = async (req, res) => {
   try {
-    const result = await getAnswerByQuestionIdFromModel(req.params.id);
+    const answers = await getAnswersByQuestionIdFromModel(req.params.id);
 
-    if (!result) {
+    if (!answers) {
       return res
         .status(404)
         .json({ message: "404 Not Found: Answer not found" });
     }
 
-    const formattedAnswers = result.map(formatAnswer);
+    const formattedAnswers = answers.map(formatAnswer);
 
     return res.status(200).json({
       message: "200 OK: Successfully retrieved the answers",

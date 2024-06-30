@@ -5,7 +5,7 @@ import { rateLimiter } from "../middlewares/basic-rate-limit.mjs";
 import {
   getAllQuestions,
   getQuestionById,
-  getAnswerByQuestionId,
+  getAnswersByQuestionId,
   createQuestion,
   createAnswerByQuestionId,
   handleQuestionUpvote,
@@ -18,7 +18,7 @@ const router = express.Router();
 
 router.get("/", getAllQuestions);
 router.get("/:id", getQuestionById);
-router.get("/:id/answers", getAnswerByQuestionId);
+router.get("/:id/answers", getAnswersByQuestionId);
 router.post(
   "/",
   [validateCreateUpdateQuestion, rateLimiter(10, 60000)],

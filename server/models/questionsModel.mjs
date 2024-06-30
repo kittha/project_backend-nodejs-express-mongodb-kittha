@@ -54,7 +54,7 @@ export const getQuestionById = async (id) => {
     console.error("Error fetching question by ID: ", error);
   }
 };
-export const getAnswerByQuestionId = async (id) => {
+export const getAnswersByQuestionId = async (id) => {
   try {
     const questionId = ObjectId.createFromHexString(id);
 
@@ -63,9 +63,11 @@ export const getAnswerByQuestionId = async (id) => {
     }
 
     const collection = db.collection("answers");
-    const result = await collection.find({ question_id: questionId }).toArray();
+    const answers = await collection
+      .find({ question_id: questionId })
+      .toArray();
 
-    return result;
+    return answers;
   } catch (error) {
     console.error("Error fetching answer by ID: ", error);
   }
