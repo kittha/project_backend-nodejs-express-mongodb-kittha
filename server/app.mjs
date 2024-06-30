@@ -5,7 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { client } from "./utils/db.mjs";
 import { rateLimiter } from "./middlewares/basic-rate-limit.mjs";
 import questionRouter from "./routes/questionsRoutes.mjs";
-import answerRouter from "./routes/answers.mjs";
+import answerRouter from "./routes/answersRoutes.mjs";
 
 async function init() {
   const app = express();
