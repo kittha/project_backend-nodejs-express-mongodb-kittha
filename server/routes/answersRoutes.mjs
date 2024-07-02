@@ -7,8 +7,11 @@ import {
   updateAnswer,
   deleteAnswer,
 } from "../controllers/answerController.mjs";
+import { verifyToken } from "../middlewares/authMiddleware.mjs";
 
 const router = express.Router();
+
+// router.use(verifyToken);
 
 router.get("/:id", getAnswerById);
 router.post("/:id/upvote", [rateLimiter(10, 1440000)], handleAnswerUpvote);
