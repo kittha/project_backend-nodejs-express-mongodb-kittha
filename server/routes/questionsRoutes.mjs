@@ -17,6 +17,8 @@ import {
 
 const router = express.Router();
 
+// router.use(verifyToken);
+
 router.get("/", getAllQuestions);
 router.get("/:id", getQuestionById);
 router.get("/:id/answers", getAnswersByQuestionId);
